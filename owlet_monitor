@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/Users/tongjin/miniconda3/bin/python
 #
 # Dependencies (Linux):
 # $ pip3 install python-jwt gcloud sseclient requests_toolbelt
@@ -148,11 +148,15 @@ def fetch_props():
 
 def record_vitals(p):
     device_sn = p['DSN']
-    charge_status = p['CHARGE_STATUS']['value']
-    base_station_on = p['BASE_STATION_ON']['value']
-    heart = "%d" % p['HEART_RATE']['value']
-    oxy = "%d" % p['OXYGEN_LEVEL']['value']
-    mov = "wiggling" if p['MOVEMENT']['value'] else "still"
+    #charge_status = p['CHARGE_STATUS']['value']
+    charge_status = 0
+    #base_station_on = p['BASE_STATION_ON']['value']
+    base_station_on = 1
+    data = p['REAL_TIME_VITALS']['value']
+    data = json.loads(data)
+    heart = data["hr"]
+    oxy = data["ox"]
+    mov = data["mv"]
     disp = "%d, " % time.time()
     if charge_status >= 1:
         disp += "sock charging (%d)" % charge_status
@@ -166,7 +170,7 @@ def record_vitals(p):
         elif base_station_on == 1:
             # base station was intentionally turned on, the sock is presumably
             # on the baby's foot, so we can trust heart and oxygen levels
-            disp += heart + ", " + oxy + ", " + mov + ", " + device_sn
+            disp += str(heart) + ", " + str(oxy) + ", " + str(mov) + ", " + device_sn
             record(disp)
         else:
             raise FatalError("Unexpected base_station_on=%d" % base_station_on)
