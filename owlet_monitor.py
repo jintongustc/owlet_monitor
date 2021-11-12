@@ -7,6 +7,7 @@
 # $ pip3 install pycryptodome
 
 import sys, os, time, requests, json
+import getpass
 
 sess = None
 url_props = None
@@ -52,8 +53,7 @@ def login():
     try:
         print("Enter your user account")
         owlet_user = input()
-        print("Enter your password")
-        owlet_pass = input()
+        owlet_pass = getpass.getpass()
         if not len(owlet_user):
             raise FatalError("OWLET_USER is empty")
         if not len(owlet_pass):
@@ -185,9 +185,9 @@ def record_vitals(p):
 def loop():
     global sess
     sess = requests.session()
+    login()
     while True:
-        try:
-            login()
+        try:   
             fetch_dsn()
             for prop in fetch_props():
                 record_vitals(prop)
