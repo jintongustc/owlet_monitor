@@ -8,6 +8,7 @@
 
 import sys, os, time, requests, json
 import getpass
+import logging
 
 sess = None
 url_props = None
@@ -51,7 +52,7 @@ def record(s):
 def login():
     global auth_token, expire_time, owlet_region
     try:
-        print("Enter your user account")
+        sys.stderr.write("Enter your user account \n")
         owlet_user = input()
         owlet_pass = getpass.getpass()
         if not len(owlet_user):
@@ -198,7 +199,7 @@ def loop():
             sess = requests.session()
 
 def main():
-    try:
+    try:  
         loop()
     except FatalError as e:
         sys.stderr.write('%s\n' % e)
