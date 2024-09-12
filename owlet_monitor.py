@@ -7,6 +7,8 @@
 # $ pip3 install pycryptodome
 
 import sys, os, time, requests, json
+import getpass
+import logging
 
 sess = None
 url_props = None
@@ -50,18 +52,17 @@ def record(s):
 def login():
     global auth_token, expire_time, owlet_region
     try:
-        owlet_user, owlet_pass = os.environ['OWLET_USER'], os.environ['OWLET_PASS']
+        sys.stderr.write("Enter your user account \n")
+        owlet_user = input()
+        owlet_pass = getpass.getpass()
         if not len(owlet_user):
             raise FatalError("OWLET_USER is empty")
         if not len(owlet_pass):
             raise FatalError("OWLET_PASS is empty")
     except KeyError as e:
         raise FatalError("OWLET_USER or OWLET_PASS env var is not defined")
-    if 'OWLET_REGION' in os.environ:
-        owlet_region = os.environ['OWLET_REGION']
-    if owlet_region not in region_config:
-        raise FatalError("OWLET_REGION env var '{}' not recognised - must be one of {}".format(
-            owlet_region, region_config.keys()))
+    
+    owlet_region = "world"
     if auth_token is not None and (expire_time > time.time()):
         return
     log('Logging in')
@@ -147,6 +148,7 @@ def fetch_props():
     return my_props
 
 def record_vitals(p):
+    #import pdb;pdb.set_trace()
     device_sn = p['DSN']
     #charge_status = p['CHARGE_STATUS']['value']
     charge_status = 0
@@ -158,6 +160,10 @@ def record_vitals(p):
     oxy = data["ox"]
     mov = data["mv"]
     disp = "%d, " % time.time()
+
+    from datetime import datetime
+    disp += datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+
     if charge_status >= 1:
         disp += "sock charging (%d)" % charge_status
         # base_station_on is (always?) 1 in this case
@@ -170,29 +176,30 @@ def record_vitals(p):
         elif base_station_on == 1:
             # base station was intentionally turned on, the sock is presumably
             # on the baby's foot, so we can trust heart and oxygen levels
-            disp += str(heart) + ", " + str(oxy) + ", " + str(mov) + ", " + device_sn
+            disp += ", " + str(heart) + ", " + str(oxy) + ", " + str(mov) + ", " + device_sn
             record(disp)
         else:
             raise FatalError("Unexpected base_station_on=%d" % base_station_on)
     log("%s Status: " % device_sn + disp)
 
+
 def loop():
     global sess
     sess = requests.session()
+    login()
     while True:
-        try:
-            login()
+        try:   
             fetch_dsn()
             for prop in fetch_props():
                 record_vitals(prop)
-            time.sleep(10)
+            time.sleep(2)
         except requests.exceptions.RequestException as e:
             log('Network error: %s' % e)
             time.sleep(1)
             sess = requests.session()
 
 def main():
-    try:
+    try:  
         loop()
     except FatalError as e:
         sys.stderr.write('%s\n' % e)
